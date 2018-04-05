@@ -25,11 +25,21 @@ export class ScreenTypeDemo {
   isLandscape: Observable<BreakpointState>;
 
   constructor(private mqm: BreakpointObserver) {
-    this.isHandset = this.mqm.observe([Breakpoints.HandsetLandscape,
-                                       Breakpoints.HandsetPortrait]);
-    this.isTablet = this.mqm.observe(Breakpoints.Tablet);
-    this.isWeb = this.mqm.observe([Breakpoints.WebLandscape, Breakpoints.WebPortrait]);
-    this.isPortrait = this.mqm.observe('(orientation: portrait)');
-    this.isLandscape = this.mqm.observe('(orientation: landscape)');
+    this.mqm.observe([
+      Breakpoints.Handset,
+      Breakpoints.HandsetLandscape,
+      Breakpoints.HandsetPortrait,
+      Breakpoints.Large,
+      Breakpoints.Medium,
+      Breakpoints.Small,
+      Breakpoints.Tablet,
+      Breakpoints.TabletLandscape,
+      Breakpoints.TabletPortrait,
+      Breakpoints.Web,
+      Breakpoints.WebLandscape,
+      Breakpoints.WebPortrait,
+      Breakpoints.XLarge,
+      Breakpoints.XSmall
+    ]).subscribe(console.log);
   }
 }

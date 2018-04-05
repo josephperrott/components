@@ -16,10 +16,22 @@ import {coerceArray} from '@angular/cdk/coercion';
 export interface BreakpointState {
   /** Whether the breakpoint is currently matching. */
   matches: boolean;
+
+  /** The queries being observed. */
+  queries: {
+    /** A key boolean pair for each query with its current matched state. */
+    [key: string]: boolean;
+  };
+}
+
+/** The current state of a layout breakpoint. */
+interface InternalBreakpointState {
+  matches: boolean;
+  query: string;
 }
 
 interface Query {
-  observable: Observable<BreakpointState>;
+  observable: Observable<InternalBreakpointState>;
   mql: MediaQueryList;
 }
 
@@ -45,7 +57,7 @@ export class BreakpointObserver implements OnDestroy {
    * @returns Whether any of the media queries match.
    */
   isMatched(value: string | string[]): boolean {
-    let queries = coerceArray(value);
+    const queries = splitQueries(coerceArray(value));
     return queries.some(mediaQuery => this._registerQuery(mediaQuery).mql.matches);
   }
 
@@ -55,26 +67,33 @@ export class BreakpointObserver implements OnDestroy {
    * @returns A stream of matches for the given queries.
    */
   observe(value: string | string[]): Observable<BreakpointState> {
-    let queries = coerceArray(value);
+    let queries = splitQueries(coerceArray(value));
     let observables = queries.map(query => this._registerQuery(query).observable);
 
-    return combineLatest(observables, (a: BreakpointState, b: BreakpointState) => {
-      return {
-        matches: !!((a && a.matches) || (b && b.matches)),
+    return combineLatest<InternalBreakpointState, BreakpointState>(observables, function() {
+      const output: BreakpointState = {
+        matches: false,
+        queries: {}
       };
+      Array.from(arguments).forEach((breakpointState: InternalBreakpointState) => {
+        output.matches = output.matches || breakpointState.matches;
+        output.queries[breakpointState.query] = breakpointState.matches;
+      });
+      return output;
     });
   }
 
   /** Registers a specific query to be listened for. */
   private _registerQuery(query: string): Query {
+    query = query.trim();
     // Only set up a new MediaQueryList if it is not already being listened for.
     if (this._queries.has(query)) {
       return this._queries.get(query)!;
     }
 
-    let mql: MediaQueryList = this.mediaMatcher.matchMedia(query);
+    const mql: MediaQueryList = this.mediaMatcher.matchMedia(query);
     // Create callback for match changes and add it is as a listener.
-    let queryObservable = fromEventPattern(
+    const queryObservable: Observable<InternalBreakpointState> = fromEventPattern(
       // Listener callback methods are wrapped to be placed back in ngZone. Callbacks must be placed
       // back into the zone because matchMedia is only included in Zone.js by loading the
       // webapis-media-query.js file alongside the zone.js file.  Additionally, some browsers do not
@@ -89,12 +108,23 @@ export class BreakpointObserver implements OnDestroy {
       .pipe(
         takeUntil(this._destroySubject),
         startWith(mql),
-        map((nextMql: MediaQueryList) => ({matches: nextMql.matches}))
+        map((nextMql: MediaQueryList) => (<InternalBreakpointState>{
+          matches: nextMql.matches,
+          query: query
+        }))
       );
 
     // Add the MediaQueryList to the set of queries.
-    let output = {observable: queryObservable, mql: mql};
+    const output: Query = {observable: queryObservable, mql: mql};
     this._queries.set(query, output);
     return output;
   }
+}
+
+/**
+ * Splits all queries into individual query strings to be observed.
+ */
+function splitQueries(queries: string[]): string[] {
+  return queries.map((query: string) => query.split(','))
+                .reduce((a1: string[], a2: string[]) => a1.concat(a2));
 }
