@@ -7,8 +7,8 @@
  */
 import {Injectable, NgZone, OnDestroy} from '@angular/core';
 import {MediaMatcher} from './media-matcher';
-import {combineLatest, fromEventPattern, Observable, Subject} from 'rxjs';
-import {map, startWith, takeUntil} from 'rxjs/operators';
+import {asapScheduler, combineLatest, fromEventPattern, Observable, Subject} from 'rxjs';
+import {debounceTime, map, startWith, takeUntil} from 'rxjs/operators';
 import {coerceArray} from '@angular/cdk/coercion';
 
 
@@ -59,11 +59,13 @@ export class BreakpointObserver implements OnDestroy {
     const queries = splitQueries(coerceArray(value));
     const observables = queries.map(query => this._registerQuery(query).observable);
 
-    return combineLatest(observables).pipe(map((breakpointStates: BreakpointState[]) => {
-      return {
-        matches: breakpointStates.some(state => state && state.matches)
-      };
-    }));
+    return combineLatest(observables).pipe(
+      debounceTime(0, asapScheduler),
+      map((breakpointStates: BreakpointState[]) => {
+        return {
+          matches: breakpointStates.some(state => state && state.matches)
+        };
+      }));
   }
 
   /** Registers a specific query to be listened for. */
