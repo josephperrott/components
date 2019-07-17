@@ -256,8 +256,6 @@ jobs:
           name: Starting Saucelabs tunnel
           command: ./scripts/saucelabs/start-tunnel.sh
           background: true
-        # Waits for the Saucelabs tunnel to be ready. This ensures that we don't run tests
-        # too early without Saucelabs not being ready.
       - run:
           name: Waiting for Saucelabs tunnel to start up
           command: ./scripts/saucelabs/wait-for-tunnel.sh
