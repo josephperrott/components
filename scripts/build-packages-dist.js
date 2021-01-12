@@ -44,7 +44,7 @@ if (module === require.main) {
 
 /** Builds the release packages for NPM. */
 function performNpmReleaseBuild() {
-  buildReleasePackages(false, defaultDistPath, /* isSnapshotBuild */ false);
+  return buildReleasePackages(false, defaultDistPath, /* isSnapshotBuild */ false);
 }
 
 /**
@@ -52,7 +52,7 @@ function performNpmReleaseBuild() {
  * Git HEAD SHA is included in the version (for easier debugging and back tracing).
  */
 function performDefaultSnapshotBuild() {
-  buildReleasePackages(false, defaultDistPath, /* isSnapshotBuild */ true);
+  return buildReleasePackages(false, defaultDistPath, /* isSnapshotBuild */ true);
 }
 
 /**
@@ -95,6 +95,9 @@ function buildReleasePackages(useIvy, distPath, isSnapshotBuild) {
   rm('-rf', distPath);
   mkdir('-p', distPath);
 
+  /** A list of the packages which have been built and the file path to the built artifacts. */
+  const builtPackages = [];
+
   // Copy the package output into the specified distribution folder.
   packageNames.forEach(pkgName => {
     const outputPath = getOutputPath(pkgName);
@@ -102,7 +105,10 @@ function buildReleasePackages(useIvy, distPath, isSnapshotBuild) {
     console.log(`> Copying package output to "${targetFolder}"`);
     cp('-R', outputPath, targetFolder);
     chmod('-R', 'u+w', targetFolder);
+    builtPackages.push({outputPath, name: `@angular/${pkgName}`});
   });
+
+  return builtPackages;s
 }
 
 /**

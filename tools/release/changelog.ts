@@ -9,6 +9,9 @@ const conventionalChangelog = require('conventional-changelog');
 const changelogCompare = require('conventional-changelog-writer/lib/util');
 const merge2 = require('merge2');
 
+/** Default filename for the changelog. */
+export const CHANGELOG_FILE_NAME = 'CHANGELOG.md';
+
 /**
  * Maps a commit note to a string that will be used to match notes of the
  * given type in commit messages.
