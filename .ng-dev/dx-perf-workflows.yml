@@ -1,0 +1,7 @@
+workflows:
+  build-core:
+    name: Build core
+    prepare:
+      - bazel clean
+    workflow:
+      - bazel build //src/material/core:core
